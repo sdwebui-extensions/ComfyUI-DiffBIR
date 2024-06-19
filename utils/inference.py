@@ -37,9 +37,14 @@ MODELS = {
     "v2": "https://huggingface.co/lxq007/DiffBIR-v2/resolve/main/v2.pth"
 }
 
+CACHE_DIR = "/stable-diffusion-cache/models/diffbir"
 
-def load_model_from_url(url: str) -> Dict[str, torch.Tensor]:
-    sd_path = load_file_from_url(url, model_dir="weights")
+
+def load_model_from_url(url: str, key: str = None) -> Dict[str, torch.Tensor]:
+    sd_path = os.path.join(CACHE_DIR, os.path.basename(url))
+
+    if not os.path.exists(sd_path):
+        sd_path = load_file_from_url(url, model_dir=model_dir)
     sd = torch.load(sd_path, map_location="cpu")
     if "state_dict" in sd:
         sd = sd["state_dict"]
@@ -67,19 +72,19 @@ class InferenceLoop:
     def init_stage2_model(self) -> None:
         ### load uent, vae, clip
         self.cldm: ControlLDM = instantiate_from_config(OmegaConf.load("configs/inference/cldm.yaml"))
-        sd = load_model_from_url(MODELS["sd_v21"])
+        sd = load_model_from_url(MODELS["sd_v21"], "sd_v21")
         unused = self.cldm.load_pretrained_sd(sd)
         print(f"strictly load pretrained sd_v2.1, unused weights: {unused}")
         ### load controlnet
         if self.args.version == "v1":
             if self.args.task == "fr":
-                control_sd = load_model_from_url(MODELS["v1_face"])
+                control_sd = load_model_from_url(MODELS["v1_face"], "v1_face")
             elif self.args.task == "sr":
-                control_sd = load_model_from_url(MODELS["v1_general"])
+                control_sd = load_model_from_url(MODELS["v1_general"], "v1_general")
             else:
                 raise ValueError(f"DiffBIR v1 doesn't support task: {self.args.task}, please use v2 by passsing '--version v2'")
         else:
-            control_sd = load_model_from_url(MODELS["v2"])
+            control_sd = load_model_from_url(MODELS["v2"], "v2")
         self.cldm.load_controlnet_from_ckpt(control_sd)
         print(f"strictly load controlnet weight")
         self.cldm.eval().to(self.args.device)
@@ -165,7 +170,7 @@ class BSRInferenceLoop(InferenceLoop):
     @count_vram_usage
     def init_stage1_model(self) -> None:
         self.bsrnet: RRDBNet = instantiate_from_config(OmegaConf.load("configs/inference/bsrnet.yaml"))
-        sd = load_model_from_url(MODELS["bsrnet"])
+        sd = load_model_from_url(MODELS["bsrnet"], "bsrnet")
         self.bsrnet.load_state_dict(sd, strict=True)
         self.bsrnet.eval().to(self.args.device)
 
@@ -178,7 +183,7 @@ class BFRInferenceLoop(InferenceLoop):
     @count_vram_usage
     def init_stage1_model(self) -> None:
         self.swinir_face: SwinIR = instantiate_from_config(OmegaConf.load("configs/inference/swinir.yaml"))
-        sd = load_model_from_url(MODELS["swinir_face"])
+        sd = load_model_from_url(MODELS["swinir_face"], "swinir_face")
         self.swinir_face.load_state_dict(sd, strict=True)
         self.swinir_face.eval().to(self.args.device)
 
@@ -195,7 +200,7 @@ class BIDInferenceLoop(InferenceLoop):
     @count_vram_usage
     def init_stage1_model(self) -> None:
         self.scunet_psnr: SCUNet = instantiate_from_config(OmegaConf.load("configs/inference/scunet.yaml"))
-        sd = load_model_from_url(MODELS["scunet_psnr"])
+        sd = load_model_from_url(MODELS["scunet_psnr"], "scunet_psnr")
         self.scunet_psnr.load_state_dict(sd, strict=True)
         self.scunet_psnr.eval().to(self.args.device)
 
@@ -213,9 +218,9 @@ class V1InferenceLoop(InferenceLoop):
     def init_stage1_model(self) -> None:
         self.swinir: SwinIR = instantiate_from_config(OmegaConf.load("configs/inference/swinir.yaml"))
         if self.args.task == "fr":
-            sd = load_model_from_url(MODELS["swinir_face"])
+            sd = load_model_from_url(MODELS["swinir_face"], "swinir_face")
         elif self.args.task == "sr":
-            sd = load_model_from_url(MODELS["swinir_general"])
+            sd = load_model_from_url(MODELS["swinir_general"], "swinir_general")
         else:
             raise ValueError(f"DiffBIR v1 doesn't support task: {self.args.task}, please use v2 by passsing '--version v2'")
         self.swinir.load_state_dict(sd, strict=True)
@@ -234,12 +239,12 @@ class UnAlignedBFRInferenceLoop(InferenceLoop):
     @count_vram_usage
     def init_stage1_model(self) -> None:
         self.bsrnet: RRDBNet = instantiate_from_config(OmegaConf.load("configs/inference/bsrnet.yaml"))
-        sd = load_model_from_url(MODELS["bsrnet"])
+        sd = load_model_from_url(MODELS["bsrnet"], "bsrnet")
         self.bsrnet.load_state_dict(sd, strict=True)
         self.bsrnet.eval().to(self.args.device)
 
         self.swinir_face: SwinIR = instantiate_from_config(OmegaConf.load("configs/inference/swinir.yaml"))
-        sd = load_model_from_url(MODELS["swinir_face"])
+        sd = load_model_from_url(MODELS["swinir_face"], "swinir_face")
         self.swinir_face.load_state_dict(sd, strict=True)
         self.swinir_face.eval().to(self.args.device)
 

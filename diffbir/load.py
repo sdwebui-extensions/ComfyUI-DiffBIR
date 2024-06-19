@@ -25,6 +25,8 @@ MODELS = {
     "v2": "https://huggingface.co/lxq007/DiffBIR-v2/resolve/main/v2.pth"
 }
 
+CACHE_DIR = "/stable-diffusion-cache/models/diffbir"
+
 
 
 def find_file(file_name, root_dir='.'):
@@ -34,7 +36,7 @@ def find_file(file_name, root_dir='.'):
     return None
 
 
-def load_model_from_url(url: str) -> Dict[str, torch.Tensor]:
+def load_model_from_url(url: str, key=None) -> Dict[str, torch.Tensor]:
     current_directory = os.getcwd()
     current_directory_contents = os.listdir(current_directory)
 
@@ -43,7 +45,10 @@ def load_model_from_url(url: str) -> Dict[str, torch.Tensor]:
     else:
         model_dir = os.path.join(current_directory, "models", "diffbir")
 
-    sd_path = load_file_from_url(url, model_dir=model_dir)
+    sd_path = os.path.join(CACHE_DIR, os.path.basename(url))
+
+    if not os.path.exists(sd_path):
+        sd_path = load_file_from_url(url, model_dir=model_dir)
     sd = torch.load(sd_path, map_location="cpu")
     if "state_dict" in sd:
         sd = sd["state_dict"]
@@ -91,11 +96,11 @@ class Stage2_load:
         if not os.path.isfile(config_path):
             config_path = find_file("cldm.yaml")
         cldm: ControlLDM = instantiate_from_config(OmegaConf.load(config_path))
-        sd = load_model_from_url(MODELS["sd_v21"])
+        sd = load_model_from_url(MODELS["sd_v21"], "sd_v21")
         unused = cldm.load_pretrained_sd(sd)
         print(f"strictly load pretrained sd_v2.1, unused weights: {unused}")
         ### load controlnet
-        control_sd = load_model_from_url(MODELS["v2"])
+        control_sd = load_model_from_url(MODELS["v2"], "v2")
 
         cldm.load_controlnet_from_ckpt(control_sd)
         if infer_type == 'float16':
@@ -162,7 +167,7 @@ class Stage1_load:
             if not os.path.isfile(config_path):
                 config_path = find_file("bsrnet.yaml")
             bsrnet: RRDBNet = instantiate_from_config(OmegaConf.load(config_path))
-            sd = load_model_from_url(MODELS["bsrnet"])
+            sd = load_model_from_url(MODELS["bsrnet"], "bsrnet")
             bsrnet.load_state_dict(sd, strict=True)
 
             if infer_type == 'float16':
@@ -176,7 +181,7 @@ class Stage1_load:
             if not os.path.isfile(config_path):
                 config_path = find_file("swinir.yaml")
             swinir_face: SwinIR = instantiate_from_config(OmegaConf.load(config_path))
-            sd = load_model_from_url(MODELS["swinir_face"])
+            sd = load_model_from_url(MODELS["swinir_face"], "swinir_face")
             swinir_face.load_state_dict(sd, strict=True)
             if infer_type == 'float16':
                 swinir_face = swinir_face.eval().to(device).half()
@@ -189,7 +194,7 @@ class Stage1_load:
             if not os.path.isfile(config_path):
                 config_path = find_file("scunet.yaml")
             scunet_psnr: SCUNet = instantiate_from_config(OmegaConf.load(config_path))
-            sd = load_model_from_url(MODELS["scunet_psnr"])
+            sd = load_model_from_url(MODELS["scunet_psnr"], "scunet_psnr")
             scunet_psnr.load_state_dict(sd, strict=True)
             if infer_type == 'float16':
                 scunet_psnr = scunet_psnr.eval().to(device).half()
@@ -241,7 +246,7 @@ class Simple_load:
             config_path = find_file("bsrnet.yaml")
         print('1:', config_path)
         bsrnet: RRDBNet = instantiate_from_config(OmegaConf.load(config_path))
-        sd = load_model_from_url(MODELS["bsrnet"])
+        sd = load_model_from_url(MODELS["bsrnet"], "bsrnet")
         bsrnet.load_state_dict(sd, strict=True)
         if infer_type == 'float16':
             bsrnet = bsrnet.eval().to(device).half()
@@ -253,11 +258,11 @@ class Simple_load:
             config_path = find_file("cldm.yaml")
         print('2:', config_path)
         cldm: ControlLDM = instantiate_from_config(OmegaConf.load(config_path))
-        sd = load_model_from_url(MODELS["sd_v21"])
+        sd = load_model_from_url(MODELS["sd_v21"], "sd_v21")
         unused = cldm.load_pretrained_sd(sd)
         print(f"strictly load pretrained sd_v2.1, unused weights: {unused}")
         ### load controlnet
-        control_sd = load_model_from_url(MODELS["v2"])
+        control_sd = load_model_from_url(MODELS["v2"], "v2")
 
         cldm.load_controlnet_from_ckpt(control_sd)
         if infer_type == 'float16':
