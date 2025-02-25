@@ -4,12 +4,7 @@ import os
 import torch
 from omegaconf import OmegaConf
 
-from ..model.cldm import ControlLDM
-from ..model.gaussian_diffusion import Diffusion
-from ..model.bsrnet import RRDBNet
-from ..model.scunet import SCUNet
-from ..model.swinir import SwinIR
-from ..utils.common import instantiate_from_config, load_file_from_url, count_vram_usage
+from ..utils.common import load_file_from_url
 
 MODELS = {
     ### stage_1 model weights
@@ -91,6 +86,9 @@ class Stage2_load:
     DESCRIPTION = """"""
 
     def init_stage2(self, device, infer_type):
+        from ..model.cldm import ControlLDM
+        from ..model.gaussian_diffusion import Diffusion
+        from ..utils.common import instantiate_from_config
 
         config_path = os.path.join(self.pre_path, "cldm.yaml")
         if not os.path.isfile(config_path):
@@ -162,6 +160,10 @@ class Stage1_load:
     DESCRIPTION = """"""
 
     def init_stage1(self, task, device, infer_type):
+        from ..model.bsrnet import RRDBNet
+        from ..model.scunet import SCUNet
+        from ..model.swinir import SwinIR
+        from ..utils.common import instantiate_from_config
         if task == 'bsr':
             config_path = os.path.join(self.pre_path, "bsrnet.yaml")
             if not os.path.isfile(config_path):
@@ -239,6 +241,10 @@ class Simple_load:
     DESCRIPTION = """"""
 
     def simple_load(self, device, infer_type):
+        from ..model.cldm import ControlLDM
+        from ..model.gaussian_diffusion import Diffusion
+        from ..model.bsrnet import RRDBNet
+        from ..utils.common import instantiate_from_config
         if infer_type == 'float16':
             print('using float16 inference...')
         config_path = os.path.join(self.pre_path, "bsrnet.yaml")

@@ -2,8 +2,6 @@ import argparse
 
 import torch
 
-from ..utils.sr_inference import BSRInferenceLoop, BFRInferenceLoop, BIDInferenceLoop
-
 def check_device(device: str) -> str:
     if device == "cuda":
         if not torch.cuda.is_available():
@@ -96,6 +94,7 @@ class DiffBIR_sample_advanced:
                better_start, tiled, tile_size, tile_stride, keep_stage1_loaded, stage1_tile, stage1_tile_size, 
                stage1_tile_stride, pos_prompt, neg_prompt, seed, device, guidance, g_loss, 
                g_scale, g_start, g_stop, g_space, g_repeat):
+        from ..utils.sr_inference import BSRInferenceLoop, BFRInferenceLoop, BIDInferenceLoop
         device = check_device(device)
         print(image.shape)
 
@@ -190,6 +189,7 @@ class DiffBIR_sample:
     def sample(self, stage1_model, cldm, diffusion, infer_type, image, upscale_ratio, steps, cfg, 
                better_start, tiled, tile_size, tile_stride, pos_prompt, neg_prompt, 
                seed, device):
+        from ..utils.sr_inference import BSRInferenceLoop
         device = check_device(device)
         keep_stage1_loaded = True
         print(image.shape)
